@@ -42,12 +42,12 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- PM1E-compatible FakeInventories build. Install its jar into Maven
-             local repository if this version is not published in your setup. -->
+        <!-- PetteriM1/FakeInventories-1 PM1E release (1.1.8).
+             Install FakeInventories-1.1.8-PM1E-IWareQ.jar locally; see README. -->
         <dependency>
-            <groupId>com.nukkitx</groupId>
-            <artifactId>fakeinventories</artifactId>
-            <version>1.0.3-PM1E.2</version>
+            <groupId>me.iwareq</groupId>
+            <artifactId>fakeinventories-pm1e</artifactId>
+            <version>1.1.8</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
