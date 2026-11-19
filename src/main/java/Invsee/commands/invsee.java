@@ -64,37 +64,48 @@ public class invsee extends Command {
             return true;
         }
 
-        final FakeInventory inventory = new FakeInventory(
-                InventoryType.DOUBLE_CHEST,
-                "§e" + target.getName() + "'s §3inventory!"
-        );
-        inventory.setContents(target.getInventory().getContents());
+        // Wait 10 server ticks (approximately 0.5 seconds) before opening the fake inventory.
+        // This gives the client time to finish processing the command/player state.
+        Server.getInstance().getScheduler().scheduleDelayedTask(new Task() {
+            @Override
+            public void onRun(int currentTick) {
+                if (!viewer.isOnline() || !target.isOnline()) {
+                    return;
+                }
 
-        // The lower slots are reserved for display and cannot be taken.
-        for (int slot = 40; slot < 54; slot++) {
-            inventory.setItem(slot, Item.get(-161), (item, event) -> event.setCancelled(true));
-        }
+                FakeInventory inventory = new FakeInventory(
+                        InventoryType.DOUBLE_CHEST,
+                        "§e" + target.getName() + "'s §3inventory!"
+                );
+                inventory.setContents(target.getInventory().getContents());
 
-        // FakeInventories-1 dispatches InventoryTransactionEvent to the item handler.
-        // Each menu captures its own target; no shared static state is used.
-        inventory.setDefaultItemHandler((item, event) ->
-                Server.getInstance().getScheduler().scheduleDelayedTask(new Task() {
-                    @Override
-                    public void onRun(int currentTick) {
-                        if (target.isOnline()) {
-                            Map<Integer, Item> contents = new HashMap<>();
-                            for (Map.Entry<Integer, Item> entry : inventory.getContents().entrySet()) {
-                                if (entry.getKey() < 40) {
-                                    contents.put(entry.getKey(), entry.getValue());
+                // The lower slots are reserved for display and cannot be taken.
+                for (int slot = 40; slot < 54; slot++) {
+                    inventory.setItem(slot, Item.get(-161), (item, event) -> event.setCancelled(true));
+                }
+
+                // Each opened inventory keeps its own target reference.
+                inventory.setDefaultItemHandler((item, event) ->
+                        Server.getInstance().getScheduler().scheduleDelayedTask(new Task() {
+                            @Override
+                            public void onRun(int tick) {
+                                if (target.isOnline()) {
+                                    Map<Integer, Item> contents = new HashMap<>();
+                                    for (Map.Entry<Integer, Item> entry : inventory.getContents().entrySet()) {
+                                        if (entry.getKey() < 40) {
+                                            contents.put(entry.getKey(), entry.getValue());
+                                        }
+                                    }
+                                    target.getInventory().setContents(contents);
                                 }
                             }
-                            target.getInventory().setContents(contents);
-                        }
-                    }
-                }, 1)
-        );
+                        }, 1)
+                );
 
-        viewer.addWindow(inventory);
+                viewer.addWindow(inventory);
+            }
+        }, 10);
+
         return true;
     }
 
