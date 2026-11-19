@@ -7,11 +7,12 @@ import cn.nukkit.command.Command;
 import cn.nukkit.command.CommandSender;
 import cn.nukkit.command.data.CommandParamType;
 import cn.nukkit.command.data.CommandParameter;
+import cn.nukkit.inventory.InventoryType;
 import cn.nukkit.item.Item;
 import cn.nukkit.scheduler.Task;
-import com.nukkitx.fakeinventories.inventory.DoubleChestFakeInventory;
-import com.nukkitx.fakeinventories.inventory.FakeSlotChangeEvent;
+import me.iwareq.fakeinventories.FakeInventory;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class invsee extends Command {
@@ -63,53 +64,38 @@ public class invsee extends Command {
             return true;
         }
 
-        final DoubleChestFakeInventory inventory = new DoubleChestFakeInventory();
-        inventory.setName("§e" + target.getName() + "'s §3inventory!");
+        final FakeInventory inventory = new FakeInventory(
+                InventoryType.DOUBLE_CHEST,
+                "§e" + target.getName() + "'s §3inventory!"
+        );
         inventory.setContents(target.getInventory().getContents());
 
-        // Keep the lower rows reserved, as in the original plugin.
+        // The lower slots are reserved for display and cannot be taken.
         for (int slot = 40; slot < 54; slot++) {
-            inventory.setItem(slot, Item.get(-161));
+            inventory.setItem(slot, Item.get(-161), (item, event) -> event.setCancelled(true));
         }
 
-        // The listener belongs to this specific window and captures its target.
-        // No shared static target means two staff members cannot cross-edit players.
-        inventory.addListener(event -> onSlotChange(event, inventory, target));
-        viewer.addWindow(inventory);
-        return true;
-    }
-
-    private void onSlotChange(
-            FakeSlotChangeEvent event,
-            DoubleChestFakeInventory inventory,
-            Player target
-    ) {
-        if (event.getInventory() != inventory) {
-            return;
-        }
-
-        if (event.getAction().getSlot() >= 40) {
-            event.setCancelled(true);
-            return;
-        }
-
-        // Nukkit applies the transaction after the slot-change callback.
-        // Delay the copy by one tick so the fake inventory contains the new state.
-        Server.getInstance().getScheduler().scheduleDelayedTask(new Task() {
-            @Override
-            public void onRun(int currentTick) {
-                if (target.isOnline()) {
-                    Map<Integer, Item> contents = new java.util.HashMap<>();
-                    for (Map.Entry<Integer, Item> entry : inventory.getContents().entrySet()) {
-                        // Slots 40-53 are display-only filler slots in this fake window.
-                        if (entry.getKey() < 40) {
-                            contents.put(entry.getKey(), entry.getValue());
+        // FakeInventories-1 dispatches InventoryTransactionEvent to the item handler.
+        // Each menu captures its own target; no shared static state is used.
+        inventory.setDefaultItemHandler((item, event) ->
+                Server.getInstance().getScheduler().scheduleDelayedTask(new Task() {
+                    @Override
+                    public void onRun(int currentTick) {
+                        if (target.isOnline()) {
+                            Map<Integer, Item> contents = new HashMap<>();
+                            for (Map.Entry<Integer, Item> entry : inventory.getContents().entrySet()) {
+                                if (entry.getKey() < 40) {
+                                    contents.put(entry.getKey(), entry.getValue());
+                                }
+                            }
+                            target.getInventory().setContents(contents);
                         }
                     }
-                    target.getInventory().setContents(contents);
-                }
-            }
-        }, 1);
+                }, 1)
+        );
+
+        viewer.addWindow(inventory);
+        return true;
     }
 
     private String prefix() {
