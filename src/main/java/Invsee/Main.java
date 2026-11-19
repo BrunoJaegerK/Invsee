@@ -1,44 +1,41 @@
 package Invsee;
 
-
 import Invsee.commands.endersee;
 import Invsee.commands.invsee;
 import Invsee.utils.InvseeConfig;
-import cn.nukkit.Server;
 import cn.nukkit.plugin.PluginBase;
+import cn.nukkit.plugin.Plugin;
 
-    public class Main extends PluginBase {
-        private InvseeConfig invseeConfig;
-        public static Main plugin;
+public class Main extends PluginBase {
 
-        public Main() {
+    private InvseeConfig invseeConfig;
+
+    @Override
+    public void onEnable() {
+        Plugin fakeInventories = getServer().getPluginManager().getPlugin("FakeInventories");
+        if (fakeInventories == null || !fakeInventories.isEnabled()) {
+            getLogger().error("FakeInventories is required. Install the PM1E-compatible FakeInventories build before enabling Invsee.");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
         }
 
-        public void onEnable() {
-            if (Server.getInstance().getPluginManager().getPlugin("FakeInventories") != null) {
-                this.invseeConfig = new InvseeConfig(this);
-                this.invseeConfig.createDefault();
-                plugin = this;
-                String prefix = getPlugin().getInvseeConfig().prefix();
-                this.getServer().getLogger().info(prefix + "§eThe plugin has been activate!");
-                this.getServer().getCommandMap().register("help", new invsee("invsee", this.invseeConfig.invdescription(), this.getInvseeConfig().usagemessage(), new String[]{"inv"}));
-                this.getServer().getCommandMap().register("help", new endersee("endersee", this.invseeConfig.ecdescription(), this.getInvseeConfig().usagemessage(), new String[]{"ecsee"}));
-            }else{
-                getLogger().alert("§cYou must been install FakeInventories!");
-                getServer().getPluginManager().getPlugin("InvSee").onDisable();
-            }
-        }
+        this.invseeConfig = new InvseeConfig(this);
+        this.invseeConfig.createDefault();
 
-        public void onDisable() {
-            String prefix = getPlugin().getInvseeConfig().prefix();
-            this.getServer().getLogger().info(prefix + "§eThe plugin has been deactivate!");
-        }
+        getServer().getCommandMap().register("invsee", new invsee(this));
+        getServer().getCommandMap().register("endersee", new endersee(this));
 
-        public InvseeConfig getInvseeConfig() {
-            return this.invseeConfig;
-        }
+        getLogger().info(invseeConfig.prefix() + "InvseePM1E has been enabled.");
+    }
 
-        public static Main getPlugin() {
-            return plugin;
+    @Override
+    public void onDisable() {
+        if (invseeConfig != null) {
+            getLogger().info(invseeConfig.prefix() + "InvseePM1E has been disabled.");
         }
+    }
+
+    public InvseeConfig getInvseeConfig() {
+        return invseeConfig;
+    }
 }
