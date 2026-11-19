@@ -2,7 +2,7 @@ name: InvseePM1E
 version: 1.0.0
 main: Invsee.Main
 api: ["1.0.0"]
-author: ["Leon1917141", "BrunoJaegerK"]
+author: BrunoJaegerK
 description: Inspect and edit online players' inventories and ender chests.
 depend:
   - FakeInventories
