@@ -1,53 +1,77 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.example</groupId>
-    <artifactId>Invsee</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <groupId>com.brunojaegerk</groupId>
+    <artifactId>invsee-pm1e</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+
+    <name>InvseePM1E</name>
+    <description>Inventory and ender chest inspection for Nukkit PetteriM1 Edition.</description>
 
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.release>17</maven.compiler.release>
     </properties>
-<dependencies>
-    <dependency>
-        <groupId>cn.nukkit</groupId>
-        <artifactId>nukkit</artifactId>
-        <version>1.0-SNAPSHOT</version>
-        <scope>provided</scope>
-    </dependency>
-    <dependency>
-        <groupId>com.nukkitx</groupId>
-        <artifactId>fakeinventories</artifactId>
-        <version>1.0.3-SNAPSHOT</version>
-        <scope>provided</scope>
-    </dependency>
-</dependencies>
+
+    <repositories>
+        <repository>
+            <id>opencollab-releases</id>
+            <url>https://repo.opencollab.dev/maven-releases/</url>
+            <releases><enabled>true</enabled></releases>
+            <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+        <repository>
+            <id>opencollab-snapshots</id>
+            <url>https://repo.opencollab.dev/maven-snapshots/</url>
+            <releases><enabled>false</enabled></releases>
+            <snapshots><enabled>true</enabled></snapshots>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <!-- Install the PM1E project into the local Maven repository first:
+             mvn install -DskipTests (inside NukkitPetteriM1Edition). -->
+        <dependency>
+            <groupId>cn.nukkit</groupId>
+            <artifactId>Nukkit</artifactId>
+            <version>PM1E</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- PM1E-compatible FakeInventories build. Install its jar into Maven
+             local repository if this version is not published in your setup. -->
+        <dependency>
+            <groupId>com.nukkitx</groupId>
+            <artifactId>fakeinventories</artifactId>
+            <version>1.0.3-PM1E.2</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
     <build>
-        <sourceDirectory>${basedir}/src/main/java</sourceDirectory>
+        <finalName>InvseePM1E</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.1</version>
+                <version>3.13.0</version>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <release>${maven.compiler.release}</release>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <encoding>${project.build.sourceEncoding}</encoding>
                 </configuration>
             </plugin>
         </plugins>
-        <resources>
-            <resource>
-                <targetPath>.</targetPath>
-                <filtering>true</filtering>
-                <directory>${basedir}/src/main/resources/</directory>
-                <includes>
-                    <include>*.yml</include>
-                </includes>
-            </resource>
-        </resources>
     </build>
 </project>
