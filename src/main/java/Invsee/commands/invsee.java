@@ -11,78 +11,102 @@ import cn.nukkit.item.Item;
 import cn.nukkit.scheduler.Task;
 import com.nukkitx.fakeinventories.inventory.DoubleChestFakeInventory;
 import com.nukkitx.fakeinventories.inventory.FakeSlotChangeEvent;
+
 import java.util.Map;
 
 public class invsee extends Command {
-    public static String prefix = Main.getPlugin().getInvseeConfig().prefix();
-    public static Player target2;
 
-    public invsee(String name, String description, String usageMessage, String[] aliases) {
-        super(name, description, usageMessage, aliases);
-        this.setPermission("invsee.cmd");
-        this.commandParameters.put("invsee", new CommandParameter[]{new CommandParameter("invsee", CommandParamType.TARGET, false)});
+    private final Main plugin;
+
+    public invsee(Main plugin) {
+        super(
+                "invsee",
+                plugin.getInvseeConfig().invdescription(),
+                plugin.getInvseeConfig().usagemessage(),
+                new String[]{"inv"}
+        );
+        this.plugin = plugin;
+        setPermission("invsee.cmd");
+        this.commandParameters.put(
+                "invsee",
+                new CommandParameter[]{new CommandParameter("invsee", CommandParamType.TARGET, false)}
+        );
     }
 
+    @Override
     public boolean execute(CommandSender sender, String commandLabel, String[] args) {
-        if (sender instanceof Player) {
-            if (sender.hasPermission("invsee.cmd") | sender.isOp()) {
-                if (args.length == 1) {
-                    String one = args[0];
-                    Player target = Server.getInstance().getPlayer(one);
-                    target2 = target;
-                    if (target != null) {
-                        if (!target.getName().equalsIgnoreCase(sender.getName())) {
-                            DoubleChestFakeInventory inv = new DoubleChestFakeInventory();
-                            inv.setName("§e" + target.getName() + "'s §3inventory!");
-                            inv.setContents(target.getInventory().getContents());
-                            inv.setItem(40, Item.get(-161));
-                            inv.setItem(41, Item.get(-161));
-                            inv.setItem(42, Item.get(-161));
-                            inv.setItem(43, Item.get(-161));
-                            inv.setItem(44, Item.get(-161));
-                            inv.setItem(45, Item.get(-161));
-                            inv.setItem(46, Item.get(-161));
-                            inv.setItem(47, Item.get(-161));
-                            inv.setItem(48, Item.get(-161));
-                            inv.setItem(49, Item.get(-161));
-                            inv.setItem(50, Item.get(-161));
-                            inv.setItem(51, Item.get(-161));
-                            inv.setItem(52, Item.get(-161));
-                            inv.setItem(53, Item.get(-161));
-                            ((Player) sender).addWindow(inv);
-                            inv.addListener(this::onSlotChange);
-                        }else {
-                            sender.sendMessage(prefix + "§cYou can`t edit your own Inventory!");
-                        }
-                    } else {
-                        sender.sendMessage(prefix + Main.getPlugin().getInvseeConfig().isNotOnline());
-                    }
-                } else {
-                    sender.sendMessage(prefix + Main.getPlugin().getInvseeConfig().usagemessage());
-                }
-            } else {
-                sender.sendMessage(prefix + Main.getPlugin().getInvseeConfig().hasNotPermission());
-            }
-        } else {
-            sender.sendMessage(prefix + Main.getPlugin().getInvseeConfig().isNotaPlayer());
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(plugin.getInvseeConfig().isNotaPlayer());
+            return true;
         }
 
+        if (!sender.hasPermission("invsee.cmd") && !sender.isOp()) {
+            sender.sendMessage(prefix() + plugin.getInvseeConfig().hasNotPermission());
+            return true;
+        }
+
+        if (args.length != 1) {
+            sender.sendMessage(prefix() + plugin.getInvseeConfig().usagemessage());
+            return true;
+        }
+
+        Player viewer = (Player) sender;
+        Player target = Server.getInstance().getPlayer(args[0]);
+
+        if (target == null || !target.isOnline()) {
+            sender.sendMessage(prefix() + plugin.getInvseeConfig().isNotOnline());
+            return true;
+        }
+
+        if (target.getName().equalsIgnoreCase(viewer.getName())) {
+            sender.sendMessage(prefix() + "§cYou can't edit your own inventory!");
+            return true;
+        }
+
+        final DoubleChestFakeInventory inventory = new DoubleChestFakeInventory();
+        inventory.setName("§e" + target.getName() + "'s §3inventory!");
+        inventory.setContents(target.getInventory().getContents());
+
+        // Keep the lower rows reserved, as in the original plugin.
+        for (int slot = 40; slot < 54; slot++) {
+            inventory.setItem(slot, Item.get(-161));
+        }
+
+        // The listener belongs to this specific window and captures its target.
+        // No shared static target means two staff members cannot cross-edit players.
+        inventory.addListener(event -> onSlotChange(event, inventory, target));
+        viewer.addWindow(inventory);
         return true;
     }
 
-    private void onSlotChange(final FakeSlotChangeEvent event) {
-        if (event.getInventory() instanceof DoubleChestFakeInventory && event.getInventory().getName().equalsIgnoreCase("§e" + target2.getName() + "'s §3Inventory!")) {
-            if (event.getAction().getSlot() >= 40){
-                event.setCancelled(true);
-            }else {
-                Server.getInstance().getScheduler().scheduleDelayedTask(new Task() {
-                    public void onRun(int currentTick) {
-                        Map<Integer, Item> contens = event.getInventory().getContents();
-                        invsee.target2.getInventory().setContents(contens);
-                    }
-                }, 1);
-            }
+    private void onSlotChange(
+            FakeSlotChangeEvent event,
+            DoubleChestFakeInventory inventory,
+            Player target
+    ) {
+        if (event.getInventory() != inventory) {
+            return;
         }
 
+        if (event.getAction().getSlot() >= 40) {
+            event.setCancelled(true);
+            return;
+        }
+
+        // Nukkit applies the transaction after the slot-change callback.
+        // Delay the copy by one tick so the fake inventory contains the new state.
+        Server.getInstance().getScheduler().scheduleDelayedTask(new Task() {
+            @Override
+            public void onRun(int currentTick) {
+                if (target.isOnline()) {
+                    Map<Integer, Item> contents = inventory.getContents();
+                    target.getInventory().setContents(contents);
+                }
+            }
+        }, 1);
+    }
+
+    private String prefix() {
+        return plugin.getInvseeConfig().prefix();
     }
 }
