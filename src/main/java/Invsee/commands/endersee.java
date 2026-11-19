@@ -63,25 +63,36 @@ public class endersee extends Command {
             return true;
         }
 
-        final FakeInventory inventory = new FakeInventory(
-                InventoryType.ENDER_CHEST,
-                "§e" + target.getName() + "'s §5enderchest!"
-        );
-        inventory.setContents(target.getEnderChestInventory().getContents());
+        // Wait 10 server ticks (approximately 0.5 seconds) before opening the fake inventory.
+        Server.getInstance().getScheduler().scheduleDelayedTask(new Task() {
+            @Override
+            public void onRun(int currentTick) {
+                if (!viewer.isOnline() || !target.isOnline()) {
+                    return;
+                }
 
-        inventory.setDefaultItemHandler((item, event) ->
-                Server.getInstance().getScheduler().scheduleDelayedTask(new Task() {
-                    @Override
-                    public void onRun(int currentTick) {
-                        if (target.isOnline()) {
-                            Map<Integer, Item> contents = inventory.getContents();
-                            target.getEnderChestInventory().setContents(contents);
-                        }
-                    }
-                }, 1)
-        );
+                FakeInventory inventory = new FakeInventory(
+                        InventoryType.ENDER_CHEST,
+                        "§e" + target.getName() + "'s §5enderchest!"
+                );
+                inventory.setContents(target.getEnderChestInventory().getContents());
 
-        viewer.addWindow(inventory);
+                inventory.setDefaultItemHandler((item, event) ->
+                        Server.getInstance().getScheduler().scheduleDelayedTask(new Task() {
+                            @Override
+                            public void onRun(int tick) {
+                                if (target.isOnline()) {
+                                    Map<Integer, Item> contents = inventory.getContents();
+                                    target.getEnderChestInventory().setContents(contents);
+                                }
+                            }
+                        }, 1)
+                );
+
+                viewer.addWindow(inventory);
+            }
+        }, 10);
+
         return true;
     }
 
