@@ -2,7 +2,7 @@
 
 Plugin for **Nukkit PetteriM1 Edition (PM1E)** that allows authorized staff to inspect and edit the inventories and ender chests of online players.
 
-This project is an adaptation of [LeonTenDev/Invsee](https://github.com/LeonTenDev/Invsee), updated for the PM1E server API. Original command names and configurable messages are retained.
+Adapted from [LeonTenDev/Invsee](https://github.com/LeonTenDev/Invsee) for PM1E.
 
 ## Features
 
@@ -11,54 +11,50 @@ This project is an adaptation of [LeonTenDev/Invsee](https://github.com/LeonTenD
 - `/endersee <player>` — inspect and edit a player's ender chest.
 - `/ecsee <player>` — alias of `/endersee`.
 - Configurable prefix and messages in `plugins/InvseePM1E/config.yml`.
-- Separate target reference for every opened menu, avoiding cross-player edits when multiple staff members use the plugin at once.
-- Display-only filler slots in the inventory menu cannot be moved into a player's inventory.
+- Each opened menu retains its own target, preventing cross-player edits.
+- Decorative slots in the inventory menu cannot be taken.
 
 ## Requirements
 
 - Nukkit PetteriM1 Edition.
 - Java 17 or newer.
-- FakeInventories **1.0.3-PM1E.2** compatible build.
+- **PetteriM1/FakeInventories-1**, release `1.1.8-PM1E-IWareQ`.
 
-Install FakeInventories on the server before installing InvseePM1E.
+Download the exact PM1E build from [FakeInventories-1 Releases](https://github.com/PetteriM1/FakeInventories-1/releases) and install it on the server.
 
 ## Build
 
-### 1. Install PM1E into your local Maven repository
+### 1. Install PM1E locally
 
-Clone or open your PM1E source project and run this command from the directory containing its `pom.xml`:
+From the NukkitPetteriM1Edition project root:
 
 ```bash
 mvn install -DskipTests
 ```
 
-This project expects the Maven coordinates `cn.nukkit:Nukkit:PM1E`.
+### 2. Install FakeInventories-1 locally
 
-### 2. Install the PM1E-compatible FakeInventories jar
-
-If version `1.0.3-PM1E.2` is not available from your configured Maven repositories, install the jar you use on your server into your local Maven repository:
+Download `FakeInventories-1.1.8-PM1E-IWareQ.jar` from the linked releases page. From the Invsee project root, run:
 
 ```bash
-mvn install:install-file -Dfile="libs/FakeInventories-1.0.3-PM1E.2.jar" -DgroupId=com.nukkitx -DartifactId=fakeinventories -Dversion=1.0.3-PM1E.2 -Dpackaging=jar
+mvn install:install-file -Dfile="libs/FakeInventories-1.1.8-PM1E-IWareQ.jar" -DgroupId=me.iwareq -DartifactId=fakeinventories-pm1e -Dversion=1.1.8 -Dpackaging=jar
 ```
 
-Adjust the `-Dfile` path if your jar is stored somewhere else.
+Change the file path if you saved the JAR elsewhere.
 
-### 3. Build InvseePM1E
-
-Run from this project's root directory:
+### 3. Compile Invsee
 
 ```bash
 mvn clean package
 ```
 
-The plugin jar will be generated at:
+Output:
 
 ```
 target/InvseePM1E.jar
 ```
 
-Copy it and the compatible FakeInventories plugin jar into the server's `plugins` directory.
+Place both `InvseePM1E.jar` and `FakeInventories-1.1.8-PM1E-IWareQ.jar` in the server's `plugins` directory.
 
 ## Permissions
 
@@ -67,11 +63,7 @@ Copy it and the compatible FakeInventories plugin jar into the server's `plugins
 | `invsee.cmd` | op | Use `/invsee` and `/inv` |
 | `endersee.cmd` | op | Use `/endersee` and `/ecsee` |
 
-Operators can use both commands.
-
 ## Credits
 
-- Original InvSee implementation: [LeonTenDev/Invsee](https://github.com/LeonTenDev/Invsee) — original author credited as Leon1917141 in the plugin metadata.
-- PM1E adaptation and maintenance: BrunoJaegerK.
-
-This repository did not contain a license file when the adaptation began. The original project's license terms should be checked with its author before redistributing modified source under a newly chosen license.
+- Original plugin: [LeonTenDev/Invsee](https://github.com/LeonTenDev/Invsee), credited as Leon1917141 in its original metadata.
+- PM1E adaptation: BrunoJaegerK.
