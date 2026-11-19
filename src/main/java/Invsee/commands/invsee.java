@@ -99,7 +99,13 @@ public class invsee extends Command {
             @Override
             public void onRun(int currentTick) {
                 if (target.isOnline()) {
-                    Map<Integer, Item> contents = inventory.getContents();
+                    Map<Integer, Item> contents = new java.util.HashMap<>();
+                    for (Map.Entry<Integer, Item> entry : inventory.getContents().entrySet()) {
+                        // Slots 40-53 are display-only filler slots in this fake window.
+                        if (entry.getKey() < 40) {
+                            contents.put(entry.getKey(), entry.getValue());
+                        }
+                    }
                     target.getInventory().setContents(contents);
                 }
             }
