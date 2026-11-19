@@ -1,14 +1,16 @@
-name: Invsee
-version: 0.0.7
-softdepend:
-  - FakeInventories
+name: InvseePM1E
+version: 1.0.0
+main: Invsee.Main
+api: ["1.0.0"]
+author: ["Leon1917141", "BrunoJaegerK"]
+description: Inspect and edit online players' inventories and ender chests.
 depend:
   - FakeInventories
-api: 1.0.0
-author: Leon1917141
-main: Invsee.Main
+
 permissions:
   invsee.cmd:
-    default: false
+    description: Allows using /invsee and /inv.
+    default: op
   endersee.cmd:
-    default: false
+    description: Allows using /endersee and /ecsee.
+    default: op
