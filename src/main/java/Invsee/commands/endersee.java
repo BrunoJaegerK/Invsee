@@ -7,64 +7,92 @@ import cn.nukkit.command.Command;
 import cn.nukkit.command.CommandSender;
 import cn.nukkit.command.data.CommandParamType;
 import cn.nukkit.command.data.CommandParameter;
-import cn.nukkit.item.Item;
 import cn.nukkit.scheduler.Task;
 import com.nukkitx.fakeinventories.inventory.ChestFakeInventory;
 import com.nukkitx.fakeinventories.inventory.FakeSlotChangeEvent;
+
+import cn.nukkit.item.Item;
 import java.util.Map;
 
 public class endersee extends Command {
-    public static Player target2;
-    public static String prefix = Main.getPlugin().getInvseeConfig().prefix();
 
-    public endersee(String name, String description, String usageMessage, String[] aliases) {
-        super(name, description, usageMessage, aliases);
-        this.setPermission("endersee.cmd");
-        this.commandParameters.put("endersee", new CommandParameter[]{new CommandParameter("endersee", CommandParamType.TARGET, false)});
+    private final Main plugin;
+
+    public endersee(Main plugin) {
+        super(
+                "endersee",
+                plugin.getInvseeConfig().ecdescription(),
+                plugin.getInvseeConfig().ecusagemessage(),
+                new String[]{"ecsee"}
+        );
+        this.plugin = plugin;
+        setPermission("endersee.cmd");
+        this.commandParameters.put(
+                "endersee",
+                new CommandParameter[]{new CommandParameter("endersee", CommandParamType.TARGET, false)}
+        );
     }
 
+    @Override
     public boolean execute(CommandSender sender, String commandLabel, String[] args) {
-        if (sender instanceof Player) {
-            if (sender.hasPermission("endersee.cmd") | sender.isOp()) {
-                if (args.length == 1) {
-                    String one = args[0];
-                    Player target = Server.getInstance().getPlayer(one);
-                    target2 = target;
-                    if (target != null) {
-                        if (!target.getName().equalsIgnoreCase(sender.getName())) {
-                            ChestFakeInventory inv = new ChestFakeInventory();
-                            inv.setName("§e" + target.getName() + "'s §5enderchest!");
-                            inv.setContents(target.getEnderChestInventory().getContents());
-                            ((Player) sender).addWindow(inv);
-                            inv.addListener(this::onSlotChange);
-                        }else {
-                            sender.sendMessage(prefix + "§cYou can`t edit your own Enderchest!");
-                        }
-                    } else {
-                        sender.sendMessage(prefix + Main.getPlugin().getInvseeConfig().isNotOnline());
-                    }
-                } else {
-                    sender.sendMessage(prefix + Main.getPlugin().getInvseeConfig().ecusagemessage());
-                }
-            } else {
-                sender.sendMessage(prefix + Main.getPlugin().getInvseeConfig().hasNotPermission());
-            }
-        } else {
-            sender.sendMessage(prefix + Main.getPlugin().getInvseeConfig().isNotaPlayer());
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(plugin.getInvseeConfig().isNotaPlayer());
+            return true;
         }
 
+        if (!sender.hasPermission("endersee.cmd") && !sender.isOp()) {
+            sender.sendMessage(prefix() + plugin.getInvseeConfig().hasNotPermission());
+            return true;
+        }
+
+        if (args.length != 1) {
+            sender.sendMessage(prefix() + plugin.getInvseeConfig().ecusagemessage());
+            return true;
+        }
+
+        Player viewer = (Player) sender;
+        Player target = Server.getInstance().getPlayer(args[0]);
+
+        if (target == null || !target.isOnline()) {
+            sender.sendMessage(prefix() + plugin.getInvseeConfig().isNotOnline());
+            return true;
+        }
+
+        if (target.getName().equalsIgnoreCase(viewer.getName())) {
+            sender.sendMessage(prefix() + "§cYou can't edit your own ender chest!");
+            return true;
+        }
+
+        final ChestFakeInventory inventory = new ChestFakeInventory();
+        inventory.setName("§e" + target.getName() + "'s §5enderchest!");
+        inventory.setContents(target.getEnderChestInventory().getContents());
+
+        inventory.addListener(event -> onSlotChange(event, inventory, target));
+        viewer.addWindow(inventory);
         return true;
     }
 
-    private void onSlotChange(final FakeSlotChangeEvent event) {
-        if (event.getInventory() instanceof ChestFakeInventory && event.getInventory().getName().equalsIgnoreCase("§e" + target2.getName() + "'s §5enderchest!")) {
-            Server.getInstance().getScheduler().scheduleDelayedTask(new Task() {
-                public void onRun(int currentTick) {
-                    Map<Integer, Item> contens = event.getInventory().getContents();
-                    endersee.target2.getEnderChestInventory().setContents(contens);
-                }
-            }, 1);
+    private void onSlotChange(
+            FakeSlotChangeEvent event,
+            ChestFakeInventory inventory,
+            Player target
+    ) {
+        if (event.getInventory() != inventory) {
+            return;
         }
 
+        Server.getInstance().getScheduler().scheduleDelayedTask(new Task() {
+            @Override
+            public void onRun(int currentTick) {
+                if (target.isOnline()) {
+                    Map<Integer, Item> contents = inventory.getContents();
+                    target.getEnderChestInventory().setContents(contents);
+                }
+            }
+        }, 1);
+    }
+
+    private String prefix() {
+        return plugin.getInvseeConfig().prefix();
     }
 }
