@@ -7,11 +7,11 @@ import cn.nukkit.command.Command;
 import cn.nukkit.command.CommandSender;
 import cn.nukkit.command.data.CommandParamType;
 import cn.nukkit.command.data.CommandParameter;
-import cn.nukkit.scheduler.Task;
-import com.nukkitx.fakeinventories.inventory.ChestFakeInventory;
-import com.nukkitx.fakeinventories.inventory.FakeSlotChangeEvent;
-
+import cn.nukkit.inventory.InventoryType;
 import cn.nukkit.item.Item;
+import cn.nukkit.scheduler.Task;
+import me.iwareq.fakeinventories.FakeInventory;
+
 import java.util.Map;
 
 public class endersee extends Command {
@@ -63,33 +63,26 @@ public class endersee extends Command {
             return true;
         }
 
-        final ChestFakeInventory inventory = new ChestFakeInventory();
-        inventory.setName("§e" + target.getName() + "'s §5enderchest!");
+        final FakeInventory inventory = new FakeInventory(
+                InventoryType.ENDER_CHEST,
+                "§e" + target.getName() + "'s §5enderchest!"
+        );
         inventory.setContents(target.getEnderChestInventory().getContents());
 
-        inventory.addListener(event -> onSlotChange(event, inventory, target));
+        inventory.setDefaultItemHandler((item, event) ->
+                Server.getInstance().getScheduler().scheduleDelayedTask(new Task() {
+                    @Override
+                    public void onRun(int currentTick) {
+                        if (target.isOnline()) {
+                            Map<Integer, Item> contents = inventory.getContents();
+                            target.getEnderChestInventory().setContents(contents);
+                        }
+                    }
+                }, 1)
+        );
+
         viewer.addWindow(inventory);
         return true;
-    }
-
-    private void onSlotChange(
-            FakeSlotChangeEvent event,
-            ChestFakeInventory inventory,
-            Player target
-    ) {
-        if (event.getInventory() != inventory) {
-            return;
-        }
-
-        Server.getInstance().getScheduler().scheduleDelayedTask(new Task() {
-            @Override
-            public void onRun(int currentTick) {
-                if (target.isOnline()) {
-                    Map<Integer, Item> contents = inventory.getContents();
-                    target.getEnderChestInventory().setContents(contents);
-                }
-            }
-        }, 1);
     }
 
     private String prefix() {
